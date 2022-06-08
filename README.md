@@ -1,44 +1,20 @@
-# 8.2 описание Playbook по заданию
+# Домашнее задание к занятию "8.2 Работа с Playbook"
 
-
-## Описание Play 
-
-### Install Java
- - загрузка установосного пакета
- - распаковка пакета
-
-
-# Домашнее задание к занятию "08.02 Работа с Playbook"
-
-## Подготовка к выполнению
-
-1. Создайте свой собственный (или используйте старый) публичный репозиторий на github с произвольным именем.
-2. Скачайте [playbook](./playbook/) из репозитория с домашним заданием и перенесите его в свой репозиторий.
-3. Подготовьте хосты в соответствии с группами из предподготовленного playbook.
-
+---
 ## Основная часть
 
-1. Приготовьте свой собственный inventory файл `prod.yml`.
+##### 1. Приготовьте свой собственный inventory файл `prod.yml`.  
+
+##### 2. Допишите playbook: нужно сделать ещё один play, который устанавливает и настраивает [vector](https://vector.dev).
+
+##### 3. При создании tasks рекомендую использовать модули: `get_url`, `template`, `unarchive`, `file`.      
+
+##### 4. Tasks должны: скачать нужной версии дистрибутив, выполнить распаковку в выбранную директорию, установить vector.
 
 <details><summary></summary>
-  ```
-[root@localhost es2]# cat prod.yml 
----
-- name: Install Vector for server
-  hosts: all
-  become: yes
-  tasks:
-    
-  - name: Install Vector
-    yum: name=https://packages.timber.io/vector/0.21.2/vector-0.21.2-1.x86_64.rpm
+
 ```
-</details>
-
-2. Допишите playbook: нужно сделать ещё один play, который устанавливает и настраивает [vector](https://vector.dev). `Готово`
-3. При создании tasks рекомендую использовать модули: `get_url`, `template`, `unarchive`, `file`.
-4. Tasks должны: скачать нужной версии дистрибутив, выполнить распаковку в выбранную директорию, установить vector. 
-<details><summary></summary>
-  ---
+---
 - name: Install Clickhouse
   hosts: clickhouse
   handlers:
@@ -65,11 +41,18 @@
         dest: /etc/profile.d/vector.sh
         mode: 0755
 
-  
+```
+
 </details>
-5. Запустите `ansible-lint site.yml` и исправьте ошибки, если они есть.
+
+    
+##### 5. Запустите `ansible-lint site.yml` и исправьте ошибки, если они есть.
+
+Все  ошибки это лишние пробелами в конце строк 
+
 <details><summary></summary>
-  ```
+
+```
 [root@localhost playbook1]#  ansible-lint site.yml 
  [WARNING] Ansible is in a world writable directory (/home/p/playbook1), ignoring it as an ansible.cfg source.
  [WARNING]: While constructing a mapping from /home/p/playbook1/site.yml, line 27, column 13, found a duplicate dict key
@@ -82,12 +65,16 @@ Couldn't parse task at site.yml:14 (no action detected in task. This often indic
                                 'mode': 493,
                                 'src': 'templates/vector.sh.j2'},
   'become': True,
-  'name': 'Set environment vector'}
+  'name': 'Set environment vector'}   
+        
 ```
-</details>
-6. Попробуйте запустить playbook на этом окружении с флагом `--check`.
 
+</details>
+
+##### 6. Попробуйте запустить playbook на этом окружении с флагом `--check`.
+    
 <details><summary></summary>
+
 ```
 [root@localhost playbook1]# ansible-playbook site.yml -i inventory/prod.yml --check -K -e root
 BECOME password: 
@@ -136,11 +123,12 @@ PLAY RECAP *********************************************************************
 clickhouse-01              : ok=8    changed=0    unreachable=0    failed=0    skipped=1    rescued=1    ignored=0   
 
 [root@localhost playbook1]# 
-
 ```
+
 </details>
-  
-7. Запустите playbook на `prod.yml` окружении с флагом `--diff`. Убедитесь, что изменения на системе произведены.
+
+##### 7. Запустите playbook на `prod.yml` окружении с флагом `--diff`. Убедитесь, что изменения на системе произведены.
+    
 <details><summary></summary>
 
 ```
@@ -190,10 +178,13 @@ skipping: [clickhouse-01]
 PLAY RECAP *********************************************************************************************************
 clickhouse-01              : ok=8    changed=0    unreachable=0    failed=0    skipped=1    rescued=1    ignored=0   
 
-[root@localhost playbook1]#   
+[root@localhost playbook1]# 
 ```
+
 </details>
-8. Повторно запустите playbook с флагом `--diff` и убедитесь, что playbook идемпотентен.
+
+##### 8. Повторно запустите playbook с флагом `--diff` и убедитесь, что playbook идемпотентен.
+    
 <details><summary></summary>
 
 ```
@@ -243,13 +234,23 @@ skipping: [clickhouse-01]
 PLAY RECAP *********************************************************************************************************
 clickhouse-01              : ok=8    changed=0    unreachable=0    failed=0    skipped=1    rescued=1    ignored=0   
 
-[root@localhost playbook1]#  
+[root@localhost playbook1]# 
 ```
+
 </details>
-9. Подготовьте README.md файл по своему playbook. В нём должно быть описано: что делает playbook, какие у него есть параметры и теги.          ```  https://github.com/pavelmm/devops-netology/blob/main/files/README.md  ```
-10. Готовый playbook выложите в свой репозиторий, поставьте тег `08-ansible-02-playbook` на фиксирующий коммит, в ответ предоставьте ссылку на него.
-``` https://github.com/pavelmm/devops-netology/tree/main/files/8_2_ansible_play  ```
----
-### Как оформить ДЗ?
-Выполненное домашнее задание пришлите ссылкой на .md-файл в вашем репозитории.
----
+
+##### 9. Подготовьте README.md файл по своему playbook. В нём должно быть описано: что делает playbook, какие у него есть параметры и теги.
+
+<details><summary></summary>
+    
+[Ссылка на README.md](https://github.com/)
+
+</details>
+
+##### 10. Готовый playbook выложите в свой репозиторий, поставьте тег 08-ansible-02-playbook на фиксирующий коммит, в ответ предоставьте ссылку на него.
+     
+<details><summary></summary>
+
+[Ссылка на репозиторий](https://github.com/)
+
+</details>
