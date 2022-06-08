@@ -1,1 +1,255 @@
-# Ansible8_2
+# 8.2 описание Playbook по заданию
+
+
+## Описание Play 
+
+### Install Java
+ - загрузка установосного пакета
+ - распаковка пакета
+
+
+# Домашнее задание к занятию "08.02 Работа с Playbook"
+
+## Подготовка к выполнению
+
+1. Создайте свой собственный (или используйте старый) публичный репозиторий на github с произвольным именем.
+2. Скачайте [playbook](./playbook/) из репозитория с домашним заданием и перенесите его в свой репозиторий.
+3. Подготовьте хосты в соответствии с группами из предподготовленного playbook.
+
+## Основная часть
+
+1. Приготовьте свой собственный inventory файл `prod.yml`.
+
+<details><summary></summary>
+  ```
+[root@localhost es2]# cat prod.yml 
+---
+- name: Install Vector for server
+  hosts: all
+  become: yes
+  tasks:
+    
+  - name: Install Vector
+    yum: name=https://packages.timber.io/vector/0.21.2/vector-0.21.2-1.x86_64.rpm
+```
+</details>
+
+2. Допишите playbook: нужно сделать ещё один play, который устанавливает и настраивает [vector](https://vector.dev). `Готово`
+3. При создании tasks рекомендую использовать модули: `get_url`, `template`, `unarchive`, `file`.
+4. Tasks должны: скачать нужной версии дистрибутив, выполнить распаковку в выбранную директорию, установить vector. 
+<details><summary></summary>
+  ---
+- name: Install Clickhouse
+  hosts: clickhouse
+  handlers:
+    - name: Start clickhouse service
+      become: true
+      ansible.builtin.service:
+        name: clickhouse-server
+        state: restarted
+  tasks:
+    - name: Install Vector
+      yum: name=https://packages.timber.io/vector/0.21.2/vector-0.21.2-1.x86_64.rpm
+    - name: Creates directory /src/vector/
+      become: true
+      ansible.builtin.file:
+        path: /src/vector/
+        state: directory
+        owner: alaricode
+        group: wheel
+        mode: 0755
+    - name: Set environment vector
+      become: true
+      ansible.builtin.template:
+        src: templates/vector.sh.j2
+        dest: /etc/profile.d/vector.sh
+        mode: 0755
+
+  
+</details>
+5. Запустите `ansible-lint site.yml` и исправьте ошибки, если они есть.
+<details><summary></summary>
+  ```
+[root@localhost playbook1]#  ansible-lint site.yml 
+ [WARNING] Ansible is in a world writable directory (/home/p/playbook1), ignoring it as an ansible.cfg source.
+ [WARNING]: While constructing a mapping from /home/p/playbook1/site.yml, line 27, column 13, found a duplicate dict key
+(var). Using last defined value only.
+
+Couldn't parse task at site.yml:14 (no action detected in task. This often indicates a misspelled module name, or incorrect module path.)
+{ 'ansible.builtin.template': { '__file__': 'site.yml',
+                                '__line__': 16,
+                                'dest': '/etc/profile.d/vector.sh',
+                                'mode': 493,
+                                'src': 'templates/vector.sh.j2'},
+  'become': True,
+  'name': 'Set environment vector'}
+```
+</details>
+6. Попробуйте запустить playbook на этом окружении с флагом `--check`.
+
+<details><summary></summary>
+```
+[root@localhost playbook1]# ansible-playbook site.yml -i inventory/prod.yml --check -K -e root
+BECOME password: 
+[WARNING]: While constructing a mapping from /home/alaricode/playbook1/site.yml, line 34, column 13, found a
+duplicate dict key (var). Using last defined value only.
+
+PLAY [Install Clickhouse] ******************************************************************************************
+
+TASK [Gathering Facts] *********************************************************************************************
+ok: [clickhouse-01]
+
+TASK [Install Vector] **********************************************************************************************
+ok: [clickhouse-01]
+
+TASK [Creates directory /src/vector/] ******************************************************************************
+ok: [clickhouse-01]
+
+TASK [Set environment vector] **************************************************************************************
+ok: [clickhouse-01]
+
+TASK [Get clickhouse distrib] **************************************************************************************
+ok: [clickhouse-01] => (item=clickhouse-client)
+ok: [clickhouse-01] => (item=clickhouse-server)
+failed: [clickhouse-01] (item=clickhouse-common-static) => {"ansible_loop_var": "item", "changed": false, "dest": "./clickhouse-common-static-22.3.3.44.rpm", "elapsed": 0, "gid": 1001, "group": "alaricode", "item": "clickhouse-common-static", "mode": "0664", "msg": "Request failed", "owner": "alaricode", "response": "HTTP Error 404: Not Found", "secontext": "unconfined_u:object_r:user_home_t:s0", "size": 246310036, "state": "file", "status_code": 404, "uid": 1001, "url": "https://packages.clickhouse.com/rpm/stable/clickhouse-common-static-22.3.3.44.noarch.rpm"}
+
+TASK [Get clickhouse distrib] **************************************************************************************
+ok: [clickhouse-01]
+
+TASK [Install clickhouse packages] *********************************************************************************
+ok: [clickhouse-01]
+
+TASK [debug] *******************************************************************************************************
+ok: [clickhouse-01] => {
+    "clickhouse_version": "22.3.3.44"
+}
+
+TASK [Pause for 10 second for start servises] **********************************************************************
+Pausing for 10 seconds
+(ctrl+C then 'C' = continue early, ctrl+C then 'A' = abort)
+ok: [clickhouse-01]
+
+TASK [Create database] *********************************************************************************************
+skipping: [clickhouse-01]
+
+PLAY RECAP *********************************************************************************************************
+clickhouse-01              : ok=8    changed=0    unreachable=0    failed=0    skipped=1    rescued=1    ignored=0   
+
+[root@localhost playbook1]# 
+
+```
+</details>
+  
+7. Запустите playbook на `prod.yml` окружении с флагом `--diff`. Убедитесь, что изменения на системе произведены.
+<details><summary></summary>
+
+```
+[root@localhost playbook1]# ansible-playbook site.yml -i inventory/prod.yml --diff -K -e root
+BECOME password: 
+[WARNING]: While constructing a mapping from /home/alaricode/playbook1/site.yml, line 34, column 13, found a
+duplicate dict key (var). Using last defined value only.
+
+PLAY [Install Clickhouse] ******************************************************************************************
+
+TASK [Gathering Facts] *********************************************************************************************
+ok: [clickhouse-01]
+
+TASK [Install Vector] **********************************************************************************************
+ok: [clickhouse-01]
+
+TASK [Creates directory /src/vector/] ******************************************************************************
+ok: [clickhouse-01]
+
+TASK [Set environment vector] **************************************************************************************
+ok: [clickhouse-01]
+
+TASK [Get clickhouse distrib] **************************************************************************************
+ok: [clickhouse-01] => (item=clickhouse-client)
+ok: [clickhouse-01] => (item=clickhouse-server)
+failed: [clickhouse-01] (item=clickhouse-common-static) => {"ansible_loop_var": "item", "changed": false, "dest": "./clickhouse-common-static-22.3.3.44.rpm", "elapsed": 0, "gid": 1001, "group": "alaricode", "item": "clickhouse-common-static", "mode": "0664", "msg": "Request failed", "owner": "alaricode", "response": "HTTP Error 404: Not Found", "secontext": "unconfined_u:object_r:user_home_t:s0", "size": 246310036, "state": "file", "status_code": 404, "uid": 1001, "url": "https://packages.clickhouse.com/rpm/stable/clickhouse-common-static-22.3.3.44.noarch.rpm"}
+
+TASK [Get clickhouse distrib] **************************************************************************************
+ok: [clickhouse-01]
+
+TASK [Install clickhouse packages] *********************************************************************************
+ok: [clickhouse-01]
+
+TASK [debug] *******************************************************************************************************
+ok: [clickhouse-01] => {
+    "clickhouse_version": "22.3.3.44"
+}
+
+TASK [Pause for 10 second for start servises] **********************************************************************
+Pausing for 10 seconds
+(ctrl+C then 'C' = continue early, ctrl+C then 'A' = abort)
+ok: [clickhouse-01]
+
+TASK [Create database] *********************************************************************************************
+skipping: [clickhouse-01]
+
+PLAY RECAP *********************************************************************************************************
+clickhouse-01              : ok=8    changed=0    unreachable=0    failed=0    skipped=1    rescued=1    ignored=0   
+
+[root@localhost playbook1]#   
+```
+</details>
+8. Повторно запустите playbook с флагом `--diff` и убедитесь, что playbook идемпотентен.
+<details><summary></summary>
+
+```
+[root@localhost playbook1]# ansible-playbook site.yml -i inventory/prod.yml --diff -K -e root
+BECOME password: 
+[WARNING]: While constructing a mapping from /home/alaricode/playbook1/site.yml, line 34, column 13, found a
+duplicate dict key (var). Using last defined value only.
+
+PLAY [Install Clickhouse] ******************************************************************************************
+
+TASK [Gathering Facts] *********************************************************************************************
+ok: [clickhouse-01]
+
+TASK [Install Vector] **********************************************************************************************
+ok: [clickhouse-01]
+
+TASK [Creates directory /src/vector/] ******************************************************************************
+ok: [clickhouse-01]
+
+TASK [Set environment vector] **************************************************************************************
+ok: [clickhouse-01]
+
+TASK [Get clickhouse distrib] **************************************************************************************
+ok: [clickhouse-01] => (item=clickhouse-client)
+ok: [clickhouse-01] => (item=clickhouse-server)
+failed: [clickhouse-01] (item=clickhouse-common-static) => {"ansible_loop_var": "item", "changed": false, "dest": "./clickhouse-common-static-22.3.3.44.rpm", "elapsed": 0, "gid": 1001, "group": "alaricode", "item": "clickhouse-common-static", "mode": "0664", "msg": "Request failed", "owner": "alaricode", "response": "HTTP Error 404: Not Found", "secontext": "unconfined_u:object_r:user_home_t:s0", "size": 246310036, "state": "file", "status_code": 404, "uid": 1001, "url": "https://packages.clickhouse.com/rpm/stable/clickhouse-common-static-22.3.3.44.noarch.rpm"}
+
+TASK [Get clickhouse distrib] **************************************************************************************
+ok: [clickhouse-01]
+
+TASK [Install clickhouse packages] *********************************************************************************
+ok: [clickhouse-01]
+
+TASK [debug] *******************************************************************************************************
+ok: [clickhouse-01] => {
+    "clickhouse_version": "22.3.3.44"
+}
+
+TASK [Pause for 10 second for start servises] **********************************************************************
+Pausing for 10 seconds
+(ctrl+C then 'C' = continue early, ctrl+C then 'A' = abort)
+ok: [clickhouse-01]
+
+TASK [Create database] *********************************************************************************************
+skipping: [clickhouse-01]
+
+PLAY RECAP *********************************************************************************************************
+clickhouse-01              : ok=8    changed=0    unreachable=0    failed=0    skipped=1    rescued=1    ignored=0   
+
+[root@localhost playbook1]#  
+```
+</details>
+9. Подготовьте README.md файл по своему playbook. В нём должно быть описано: что делает playbook, какие у него есть параметры и теги.          ```  https://github.com/pavelmm/devops-netology/blob/main/files/README.md  ```
+10. Готовый playbook выложите в свой репозиторий, поставьте тег `08-ansible-02-playbook` на фиксирующий коммит, в ответ предоставьте ссылку на него.
+``` https://github.com/pavelmm/devops-netology/tree/main/files/8_2_ansible_play  ```
+---
+### Как оформить ДЗ?
+Выполненное домашнее задание пришлите ссылкой на .md-файл в вашем репозитории.
+---
